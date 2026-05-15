@@ -103,9 +103,9 @@ function GameCard({ game, onClick }) {
 }
 
 const styles = {
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 },
-  modal: { background: '#fff', borderRadius: 20, width: '100%', maxWidth: 420, maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' },
-  gameContainer: { background: '#fff', borderRadius: 16, width: '100%', maxWidth: 540, height: '95vh', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 12 },
+  modal: { background: '#fff', borderRadius: 20, width: '100%', maxWidth: 420, maxHeight: 'min(85vh, 700px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' },
+  gameContainer: { background: '#fff', borderRadius: 16, width: '100%', maxWidth: 560, height: 'min(95dvh, 800px)', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px 8px' },
   titleRow: { display: 'flex', alignItems: 'center', gap: 8 },
   titleIcon: { fontSize: 24 },

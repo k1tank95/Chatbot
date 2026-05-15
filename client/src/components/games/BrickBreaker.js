@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useViewport } from '../../hooks/useViewport';
 
 const W = 400, H = 480;
 const PADDLE_W = 80, PADDLE_H = 12;
@@ -26,6 +27,12 @@ const createBricks = () => {
 
 export default function BrickBreaker({ onScoreShare, onClose }) {
   const canvasRef = useRef(null);
+  const { width: vw, isMobile } = useViewport();
+  const displayW = Math.min(W, vw - 40);
+  const displayH = (displayW / W) * H;
+  const scaleRef = useRef(displayW / W);
+  scaleRef.current = displayW / W;
+
   const stateRef = useRef({
     paddleX: W / 2 - PADDLE_W / 2,
     ballX: W / 2, ballY: H - 50,
@@ -75,16 +82,39 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
     };
     const up = (e) => { stateRef.current.keys[e.key] = false; };
     const mm = (e) => {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) / scaleRef.current;
       stateRef.current.paddleX = Math.max(0, Math.min(W - PADDLE_W, mx - PADDLE_W / 2));
     };
+    const tm = (e) => {
+      e.preventDefault();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const mx = (touch.clientX - rect.left) / scaleRef.current;
+      stateRef.current.paddleX = Math.max(0, Math.min(W - PADDLE_W, mx - PADDLE_W / 2));
+    };
+    const ts = (e) => {
+      if (gameOver || won) { reset(); return; }
+      if (!stateRef.current.launched) {
+        stateRef.current.launched = true;
+      }
+    };
+    const canvas = canvasRef.current;
     window.addEventListener('keydown', dn);
     window.addEventListener('keyup', up);
-    canvasRef.current.addEventListener('mousemove', mm);
+    canvas.addEventListener('mousemove', mm);
+    canvas.addEventListener('touchmove', tm, { passive: false });
+    canvas.addEventListener('touchstart', ts, { passive: false });
     return () => {
       window.removeEventListener('keydown', dn);
       window.removeEventListener('keyup', up);
+      canvas.removeEventListener('mousemove', mm);
+      canvas.removeEventListener('touchmove', tm);
+      canvas.removeEventListener('touchstart', ts);
     };
   }, [gameOver, won, reset]);
 
@@ -95,7 +125,6 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
     const draw = () => {
       const s = stateRef.current;
       if (!gameOver && !won && !paused) {
-        // 패들 이동
         if (s.keys['ArrowLeft']) s.paddleX = Math.max(0, s.paddleX - 6);
         if (s.keys['ArrowRight']) s.paddleX = Math.min(W - PADDLE_W, s.paddleX + 6);
 
@@ -107,7 +136,6 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
           if (s.ballX + BALL_R > W) { s.ballX = W - BALL_R; s.ballVX = -s.ballVX; }
           if (s.ballY - BALL_R < 0) { s.ballY = BALL_R; s.ballVY = -s.ballVY; }
 
-          // 패들 충돌
           if (s.ballY + BALL_R >= H - 30 && s.ballY + BALL_R <= H - 30 + PADDLE_H &&
               s.ballX >= s.paddleX && s.ballX <= s.paddleX + PADDLE_W && s.ballVY > 0) {
             const hit = (s.ballX - s.paddleX) / PADDLE_W - 0.5;
@@ -116,7 +144,6 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
             s.ballVY = -Math.abs(speed * Math.cos(hit * Math.PI / 3));
           }
 
-          // 벽돌 충돌
           for (const b of s.bricks) {
             if (!b.alive) continue;
             if (s.ballX + BALL_R > b.x && s.ballX - BALL_R < b.x + BRICK_W &&
@@ -135,13 +162,11 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
             }
           }
 
-          // 모든 벽돌 깸
           if (s.bricks.every(b => !b.alive)) {
             if (level >= 5) setWon(true);
             else setTimeout(nextLevel, 100);
           }
 
-          // 떨어짐
           if (s.ballY > H) {
             setLives(l => {
               const nl = l - 1;
@@ -159,21 +184,18 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
         }
       }
 
-      // 렌더링
       const grad = ctx.createLinearGradient(0, 0, 0, H);
       grad.addColorStop(0, '#1a1a2e');
       grad.addColorStop(1, '#0f0f1e');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
 
-      // 별 배경
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
       for (let i = 0; i < 30; i++) {
         const sx = (i * 137.5) % W, sy = (i * 233.7) % H;
         ctx.fillRect(sx, sy, 1, 1);
       }
 
-      // 벽돌
       s.bricks.forEach(b => {
         if (!b.alive) return;
         ctx.fillStyle = b.color;
@@ -185,7 +207,6 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
         ctx.fillRect(b.x, b.y + BRICK_H - 3, BRICK_W, 3);
       });
 
-      // 패들
       const pgrad = ctx.createLinearGradient(0, H - 30, 0, H - 30 + PADDLE_H);
       pgrad.addColorStop(0, '#FEE500');
       pgrad.addColorStop(1, '#FFB300');
@@ -194,7 +215,6 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
       ctx.fillRect(s.paddleX, H - 30, PADDLE_W, 3);
 
-      // 공
       ctx.beginPath();
       ctx.arc(s.ballX, s.ballY, BALL_R, 0, Math.PI * 2);
       const bgrad = ctx.createRadialGradient(s.ballX - 2, s.ballY - 2, 1, s.ballX, s.ballY, BALL_R);
@@ -207,18 +227,18 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
         ctx.fillStyle = '#FEE500';
         ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('스페이스로 시작!', W / 2, H / 2);
+        ctx.fillText(isMobile ? '화면을 터치해서 시작!' : '스페이스로 시작!', W / 2, H / 2);
       }
 
-      if (gameOver) overlay(ctx, 'GAME OVER', `점수: ${score}`, 'Enter: 다시하기');
-      if (won) overlay(ctx, 'CLEAR!', `점수: ${score}`, 'Enter: 다시하기');
+      if (gameOver) overlay(ctx, 'GAME OVER', `점수: ${score}`, isMobile ? '터치: 다시하기' : 'Enter: 다시하기');
+      if (won) overlay(ctx, 'CLEAR!', `점수: ${score}`, isMobile ? '터치: 다시하기' : 'Enter: 다시하기');
       if (paused && !gameOver && !won) overlay(ctx, 'PAUSED', '', 'P: 계속하기');
 
       rafId = requestAnimationFrame(draw);
     };
     draw();
     return () => cancelAnimationFrame(rafId);
-  }, [gameOver, won, paused, level, score, highScore, nextLevel]);
+  }, [gameOver, won, paused, level, score, highScore, nextLevel, isMobile]);
 
   return (
     <div style={styles.container}>
@@ -233,8 +253,14 @@ export default function BrickBreaker({ onScoreShare, onClose }) {
         <div style={styles.box}><span style={styles.label}>생명</span><span style={{ ...styles.val, color: '#E74C3C' }}>{'❤️'.repeat(lives)}</span></div>
         <div style={styles.box}><span style={styles.label}>최고</span><span style={{ ...styles.val, color: '#F39C12', fontSize: 13 }}>🏆 {highScore}</span></div>
       </div>
-      <canvas ref={canvasRef} width={W} height={H} style={styles.canvas} />
-      <p style={styles.help}>← → 또는 마우스로 패들 조작 · Space 발사 · P 일시정지</p>
+      <canvas
+        ref={canvasRef}
+        width={W}
+        height={H}
+        style={{ ...styles.canvas, width: displayW, height: displayH }}
+      />
+      {!isMobile && <p style={styles.help}>← → 또는 마우스로 패들 조작 · Space 발사 · P 일시정지</p>}
+      {isMobile && <p style={styles.help}>손가락으로 드래그해서 패들 조작 · 터치해서 발사</p>}
       {(gameOver || won) && (
         <div style={styles.btnGroup}>
           <button style={styles.actionBtn} onClick={reset}>🔄 다시하기</button>
@@ -267,8 +293,8 @@ const styles = {
   box: { background: '#fff', padding: '6px 12px', borderRadius: 8, textAlign: 'center', minWidth: 65, boxShadow: '0 2px 4px rgba(0,0,0,0.06)' },
   label: { display: 'block', fontSize: 10, color: '#888' },
   val: { fontSize: 16, fontWeight: 700 },
-  canvas: { border: '3px solid #0a0a1a', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.2)', cursor: 'none' },
-  help: { fontSize: 11, color: '#666', marginTop: 8 },
+  canvas: { border: '3px solid #0a0a1a', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.2)', cursor: 'none', maxWidth: '100%', touchAction: 'none' },
+  help: { fontSize: 11, color: '#666', marginTop: 8, textAlign: 'center' },
   btnGroup: { display: 'flex', gap: 8, marginTop: 8 },
   actionBtn: { padding: '8px 18px', background: '#FEE500', border: 'none', borderRadius: 20, fontSize: 13, fontWeight: 700, color: '#3A1D96', cursor: 'pointer' },
   shareBtn: { padding: '8px 18px', background: '#3A1D96', border: 'none', borderRadius: 20, fontSize: 13, fontWeight: 700, color: '#FEE500', cursor: 'pointer' },

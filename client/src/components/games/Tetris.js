@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useViewport } from '../../hooks/useViewport';
 
 const COLS = 10, ROWS = 20, CELL = 22;
 const W = COLS * CELL, H = ROWS * CELL;
@@ -50,6 +51,11 @@ const clearLines = (board) => {
 
 export default function Tetris({ onScoreShare, onClose }) {
   const canvasRef = useRef(null);
+  const { width: vw, isMobile } = useViewport();
+  // 게임 영역 + 사이드바(100px)이 들어가야 하므로 가용폭 계산
+  const maxW = Math.min(W, vw - 140);
+  const displayW = maxW;
+  const displayH = (displayW / W) * H;
   const [board, setBoard] = useState(() => Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
   const [piece, setPiece] = useState(newPiece);
   const [next, setNext] = useState(newPiece);
@@ -198,7 +204,7 @@ export default function Tetris({ onScoreShare, onClose }) {
         <div style={{ width: 80 }} />
       </div>
       <div style={styles.body}>
-        <canvas ref={canvasRef} width={W} height={H} style={styles.canvas} />
+        <canvas ref={canvasRef} width={W} height={H} style={{ ...styles.canvas, width: displayW, height: displayH }} />
         <div style={styles.sidebar}>
           <ScoreBox label="점수" value={score} color="#00BCD4" />
           <ScoreBox label="레벨" value={level} color="#E91E63" />
@@ -210,7 +216,22 @@ export default function Tetris({ onScoreShare, onClose }) {
           </div>
         </div>
       </div>
-      <p style={styles.help}>← → 이동 · ↑ 회전 · ↓ 빠르게 · Space 즉시낙하 · P 일시정지</p>
+      {!isMobile && <p style={styles.help}>← → 이동 · ↑ 회전 · ↓ 빠르게 · Space 즉시낙하 · P 일시정지</p>}
+      {isMobile && !gameOver && (
+        <TetrisTouchPad
+          onLeft={() => tryMove(-1, 0)}
+          onRight={() => tryMove(1, 0)}
+          onDown={() => tryMove(0, 1) || lockAndNext()}
+          onRotate={() => tryMove(0, 0, rotate(pieceRef.current.shape))}
+          onDrop={() => {
+            let dy = 0;
+            while (!collides(boardRef.current, pieceRef.current, 0, dy + 1)) dy++;
+            setPiece(prev => ({ ...prev, y: prev.y + dy }));
+            setTimeout(lockAndNext, 0);
+          }}
+          onPause={() => setPaused(p => !p)}
+        />
+      )}
       {gameOver && (
         <div style={styles.btnGroup}>
           <button style={styles.actionBtn} onClick={reset}>🔄 다시하기</button>
@@ -231,6 +252,25 @@ function drawCell(ctx, x, y, color) {
   ctx.fillRect(x * CELL + 1, y * CELL + CELL - 4, CELL - 2, 3);
   ctx.fillRect(x * CELL + CELL - 4, y * CELL + 1, 3, CELL - 2);
 }
+
+function TetrisTouchPad({ onLeft, onRight, onDown, onRotate, onDrop, onPause }) {
+  const handle = (fn) => (e) => { e.preventDefault(); fn(); };
+  return (
+    <div style={tpStyle.wrap}>
+      <button style={tpStyle.btn} onTouchStart={handle(onLeft)} onClick={onLeft}>◀</button>
+      <button style={tpStyle.btn} onTouchStart={handle(onRotate)} onClick={onRotate}>🔄</button>
+      <button style={tpStyle.btn} onTouchStart={handle(onRight)} onClick={onRight}>▶</button>
+      <button style={tpStyle.btn} onTouchStart={handle(onDown)} onClick={onDown}>▼</button>
+      <button style={{ ...tpStyle.btn, background: '#3A1D96', color: '#FEE500' }} onTouchStart={handle(onDrop)} onClick={onDrop}>⬇️</button>
+      <button style={{ ...tpStyle.btn, fontSize: 14 }} onClick={onPause}>⏸</button>
+    </div>
+  );
+}
+
+const tpStyle = {
+  wrap: { display: 'grid', gridTemplateColumns: 'repeat(3, 56px)', gap: 6, marginTop: 12 },
+  btn: { background: '#FEE500', border: 'none', borderRadius: 12, fontSize: 18, fontWeight: 700, color: '#3A1D96', cursor: 'pointer', minHeight: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.15)', userSelect: 'none' },
+};
 
 function ScoreBox({ label, value, color, small }) {
   return (
@@ -260,7 +300,7 @@ const styles = {
   backBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#3A1D96', fontWeight: 700 },
   title: { fontSize: 16, fontWeight: 700 },
   body: { display: 'flex', gap: 12, alignItems: 'flex-start' },
-  canvas: { border: '3px solid #0a0a1a', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.2)' },
+  canvas: { border: '3px solid #0a0a1a', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.2)', maxWidth: '100%', touchAction: 'none' },
   sidebar: { display: 'flex', flexDirection: 'column', gap: 6, width: 90 },
   nextBox: { background: '#fff', padding: 8, borderRadius: 8, textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.06)' },
   nextLabel: { fontSize: 10, color: '#888', marginBottom: 4 },

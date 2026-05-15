@@ -59,8 +59,8 @@ export default function AuthPage() {
 }
 
 const styles = {
-  container: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'linear-gradient(135deg, #FEE500 0%, #FFD700 100%)', width: '100%' },
-  card: { background: '#fff', borderRadius: 16, padding: '40px 36px', width: '100%', maxWidth: 380, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
+  container: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', background: 'linear-gradient(135deg, #FEE500 0%, #FFD700 100%)', width: '100%', padding: 16 },
+  card: { background: '#fff', borderRadius: 16, padding: '32px 28px', width: '100%', maxWidth: 380, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
   logo: { textAlign: 'center', marginBottom: 28 },
   logoIcon: { fontSize: 48, marginBottom: 8 },
   logoText: { fontSize: 28, fontWeight: 700, color: '#3A1D96' },

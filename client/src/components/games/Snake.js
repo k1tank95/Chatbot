@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useViewport } from '../../hooks/useViewport';
 
 const GRID = 20;
 const CELL = 18;
@@ -11,6 +12,8 @@ const DIRS = {
 
 export default function Snake({ onScoreShare, onClose }) {
   const canvasRef = useRef(null);
+  const { width: vw, isMobile } = useViewport();
+  const displaySize = Math.min(SIZE, vw - 40);
   const [snake, setSnake] = useState([[10, 10], [9, 10], [8, 10]]);
   const [food, setFood] = useState([15, 10]);
   const [dir, setDir] = useState([1, 0]);
@@ -168,9 +171,19 @@ export default function Snake({ onScoreShare, onClose }) {
         <div style={styles.scoreBox}><span style={styles.label}>최고</span><span style={styles.highScore}>🏆 {highScore}</span></div>
         <div style={styles.scoreBox}><span style={styles.label}>속도</span><span style={styles.speedVal}>{Math.round((140 - speed) / 2) + 1}</span></div>
       </div>
-      <canvas ref={canvasRef} width={SIZE} height={SIZE} style={styles.canvas} />
+      <canvas ref={canvasRef} width={SIZE} height={SIZE} style={{ ...styles.canvas, width: displaySize, height: displaySize }} />
       <div style={styles.controls}>
-        <p style={styles.help}>방향키/WASD로 이동 · P로 일시정지</p>
+        {!isMobile && <p style={styles.help}>방향키/WASD로 이동 · P로 일시정지</p>}
+        {isMobile && !gameOver && (
+          <TouchPad
+            onDir={(d) => {
+              const [cdx, cdy] = dirRef.current;
+              if (d[0] === -cdx && d[1] === -cdy) return;
+              queuedDirRef.current = d;
+            }}
+            onPause={() => setPaused(p => !p)}
+          />
+        )}
         {gameOver && (
           <div style={styles.btnGroup}>
             <button style={styles.actionBtn} onClick={reset}>🔄 다시하기</button>
@@ -182,8 +195,47 @@ export default function Snake({ onScoreShare, onClose }) {
   );
 }
 
+function TouchPad({ onDir, onPause }) {
+  const btn = (icon, dir, gridArea) => (
+    <button
+      style={{ ...padStyles.btn, gridArea }}
+      onTouchStart={(e) => { e.preventDefault(); onDir(dir); }}
+      onClick={() => onDir(dir)}
+    >{icon}</button>
+  );
+  return (
+    <div style={padStyles.wrap}>
+      <div style={padStyles.pad}>
+        {btn('▲', [0, -1], 'up')}
+        {btn('◀', [-1, 0], 'left')}
+        <button style={{ ...padStyles.btn, gridArea: 'center', fontSize: 12 }} onClick={onPause}>⏸</button>
+        {btn('▶', [1, 0], 'right')}
+        {btn('▼', [0, 1], 'down')}
+      </div>
+    </div>
+  );
+}
+
+const padStyles = {
+  wrap: { display: 'flex', justifyContent: 'center', marginTop: 12 },
+  pad: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 50px)',
+    gridTemplateRows: 'repeat(3, 50px)',
+    gridTemplateAreas: '". up ." "left center right" ". down ."',
+    gap: 6,
+  },
+  btn: {
+    background: '#FEE500', border: 'none', borderRadius: 12,
+    fontSize: 18, fontWeight: 700, color: '#3A1D96',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+    userSelect: 'none', WebkitTouchCallout: 'none',
+  },
+};
+
 const styles = {
-  container: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 16, background: '#FAFAFA', height: '100%' },
+  container: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 16, background: '#FAFAFA', height: '100%', overflow: 'auto' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 12 },
   backBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#3A1D96', fontWeight: 700 },
   title: { fontSize: 16, fontWeight: 700 },
@@ -193,7 +245,7 @@ const styles = {
   score: { fontWeight: 700, fontSize: 18, color: '#2ECC71' },
   highScore: { fontWeight: 700, fontSize: 14, color: '#F39C12' },
   speedVal: { fontWeight: 700, fontSize: 16, color: '#E91E63' },
-  canvas: { border: '3px solid #1B5E20', borderRadius: 12, boxShadow: '0 6px 20px rgba(0,0,0,0.15)', background: '#E8F5E9' },
+  canvas: { border: '3px solid #1B5E20', borderRadius: 12, boxShadow: '0 6px 20px rgba(0,0,0,0.15)', background: '#E8F5E9', maxWidth: '100%', touchAction: 'none' },
   controls: { marginTop: 10, textAlign: 'center' },
   help: { fontSize: 12, color: '#666', marginBottom: 8 },
   btnGroup: { display: 'flex', gap: 8, justifyContent: 'center' },

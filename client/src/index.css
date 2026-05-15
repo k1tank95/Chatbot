@@ -4,17 +4,34 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   background: #f0f0f0;
   overflow: hidden;
+  /* 모바일 브라우저 주소창 변화에 대응: dvh 우선, vh 폴백 */
   height: 100vh;
+  height: 100dvh;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
 }
 
 #root {
   height: 100vh;
+  height: 100dvh;
   display: flex;
+  width: 100%;
 }
+
+/* iOS 자동 확대 방지: 입력 폰트 16px 이상 강제 */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* 터치 디바이스에서 더블탭 줌 방지 */
+button { touch-action: manipulation; }
 
 ::-webkit-scrollbar {
   width: 4px;

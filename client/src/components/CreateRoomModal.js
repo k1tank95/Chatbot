@@ -99,8 +99,8 @@ export default function CreateRoomModal({ onClose, onCreated }) {
 }
 
 const styles = {
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-  modal: { background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 12 },
+  modal: { background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, maxHeight: 'min(80vh, 600px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #eee' },
   title: { fontSize: 17, fontWeight: 700 },
   closeBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#666' },

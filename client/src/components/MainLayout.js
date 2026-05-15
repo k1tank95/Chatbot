@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useViewport } from '../hooks/useViewport';
 import Sidebar from './Sidebar';
 import ChatRoom from './ChatRoom';
 import CreateRoomModal from './CreateRoomModal';
@@ -9,6 +10,7 @@ import CreateRoomModal from './CreateRoomModal';
 export default function MainLayout() {
   const { socket } = useSocket();
   const { user } = useAuth();
+  const { isMobile } = useViewport();
   const [rooms, setRooms] = useState([]);
   const [activeRoom, setActiveRoom] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -73,33 +75,48 @@ export default function MainLayout() {
     setShowCreateModal(false);
   }, [handleRoomSelect]);
 
+  const handleBackToList = useCallback(() => {
+    activeRoomRef.current = null;
+    setActiveRoom(null);
+  }, []);
+
+  // 모바일: 채팅방 진입 시 사이드바 숨김 / 데스크톱: 항상 표시
+  const showSidebar = !isMobile || !activeRoom;
+  const showMain = !isMobile || !!activeRoom;
+
   return (
     <div style={styles.container}>
-      <Sidebar
-        rooms={rooms}
-        activeRoom={activeRoom}
-        onRoomSelect={handleRoomSelect}
-        onCreateRoom={() => setShowCreateModal(true)}
-        userStatuses={userStatuses}
-        currentUser={user}
-      />
-      <div style={styles.main}>
-        {activeRoom ? (
-          <ChatRoom
-            key={activeRoom.id}
-            room={activeRoom}
-            currentUser={user}
-            userStatuses={userStatuses}
-            onRoomUpdated={fetchRooms}
-          />
-        ) : (
-          <div style={styles.empty}>
-            <div style={styles.emptyIcon}>💬</div>
-            <p style={styles.emptyText}>대화를 선택하거나 새로운 대화를 시작하세요</p>
-            <button style={styles.emptyBtn} onClick={() => setShowCreateModal(true)}>새 대화 시작</button>
-          </div>
-        )}
-      </div>
+      {showSidebar && (
+        <Sidebar
+          rooms={rooms}
+          activeRoom={activeRoom}
+          onRoomSelect={handleRoomSelect}
+          onCreateRoom={() => setShowCreateModal(true)}
+          userStatuses={userStatuses}
+          currentUser={user}
+          isMobile={isMobile}
+        />
+      )}
+      {showMain && (
+        <div style={styles.main}>
+          {activeRoom ? (
+            <ChatRoom
+              key={activeRoom.id}
+              room={activeRoom}
+              currentUser={user}
+              userStatuses={userStatuses}
+              onRoomUpdated={fetchRooms}
+              onBack={isMobile ? handleBackToList : null}
+            />
+          ) : (
+            <div style={styles.empty}>
+              <div style={styles.emptyIcon}>💬</div>
+              <p style={styles.emptyText}>대화를 선택하거나 새로운 대화를 시작하세요</p>
+              <button style={styles.emptyBtn} onClick={() => setShowCreateModal(true)}>새 대화 시작</button>
+            </div>
+          )}
+        </div>
+      )}
       {showCreateModal && (
         <CreateRoomModal onClose={() => setShowCreateModal(false)} onCreated={handleRoomCreated} />
       )}
@@ -108,10 +125,10 @@ export default function MainLayout() {
 }
 
 const styles = {
-  container: { display: 'flex', height: '100vh', width: '100%' },
-  main: { flex: 1, display: 'flex', flexDirection: 'column', background: '#f5f5f5' },
-  empty: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#999' },
+  container: { display: 'flex', height: '100dvh', width: '100%', overflow: 'hidden' },
+  main: { flex: 1, display: 'flex', flexDirection: 'column', background: '#f5f5f5', minWidth: 0 },
+  empty: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#999', padding: 20, textAlign: 'center' },
   emptyIcon: { fontSize: 64, marginBottom: 16 },
   emptyText: { fontSize: 15, marginBottom: 20 },
-  emptyBtn: { padding: '10px 24px', background: '#FEE500', border: 'none', borderRadius: 20, fontSize: 14, fontWeight: 700, color: '#3A1D96', cursor: 'pointer' },
+  emptyBtn: { padding: '12px 26px', background: '#FEE500', border: 'none', borderRadius: 22, fontSize: 14, fontWeight: 700, color: '#3A1D96', cursor: 'pointer', minHeight: 44 },
 };

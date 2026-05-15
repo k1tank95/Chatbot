@@ -9,7 +9,7 @@ import EmoticonPicker from './EmoticonPicker';
 import EmoticonSticker from './Emoticons';
 import GameCenter from './GameCenter';
 
-export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdated }) {
+export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdated, onBack }) {
   const { socket } = useSocket();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -174,6 +174,9 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
     <div style={styles.container}>
       <div style={styles.header}>
         <div style={styles.headerLeft}>
+          {onBack && (
+            <button style={styles.backBtn} onClick={onBack} title="뒤로">‹</button>
+          )}
           <div style={styles.roomName}>{getRoomName()}</div>
           {roomInfo.type === 'group' && <div style={styles.memberCount}>{roomInfo.members?.length}명</div>}
         </div>
@@ -404,13 +407,14 @@ function getFileIcon(fileName) {
 }
 
 const styles = {
-  container: { display: 'flex', flexDirection: 'column', height: '100vh', background: '#b2c7d9' },
-  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#fff', borderBottom: '1px solid #eee', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: 8 },
-  roomName: { fontWeight: 700, fontSize: 16 },
+  container: { display: 'flex', flexDirection: 'column', height: '100dvh', background: '#b2c7d9', flex: 1, minWidth: 0 },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', borderBottom: '1px solid #eee', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', flexShrink: 0 },
+  headerLeft: { display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 },
+  backBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 32, padding: '0 8px', color: '#3A1D96', lineHeight: 1, fontWeight: 300, minHeight: 40 },
+  roomName: { fontWeight: 700, fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   memberCount: { color: '#aaa', fontSize: 13 },
   headerActions: { display: 'flex', gap: 4 },
-  headerBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, padding: '4px 8px', borderRadius: 8 },
+  headerBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: '8px 10px', borderRadius: 8, minWidth: 44, minHeight: 44 },
   messages: { flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 2 },
   loadingText: { textAlign: 'center', color: '#888', fontSize: 13, padding: 20 },
   dateDivider: { display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '16px 0 8px' },
@@ -421,7 +425,7 @@ const styles = {
   msgRowMine: { flexDirection: 'row-reverse' },
   avatarCol: { width: 36, flexShrink: 0, display: 'flex', alignItems: 'flex-start' },
   avatar: { width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#333' },
-  msgContent: { display: 'flex', flexDirection: 'column', maxWidth: '70%' },
+  msgContent: { display: 'flex', flexDirection: 'column', maxWidth: '75%', minWidth: 0 },
   msgContentMine: { alignItems: 'flex-end' },
   senderName: { fontSize: 12, color: '#555', marginBottom: 3, marginLeft: 4 },
   bubbleRow: { display: 'flex', alignItems: 'flex-end', gap: 4 },
@@ -430,7 +434,7 @@ const styles = {
   bubbleOther: { background: '#fff', borderBottomLeftRadius: 4, boxShadow: '0 1px 2px rgba(0,0,0,0.08)' },
   emoticonBubble: { background: 'transparent', borderRadius: 12, padding: 4, display: 'inline-block' },
   textMsg: { fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap' },
-  imageMsg: { maxWidth: 240, maxHeight: 240, borderRadius: 8, cursor: 'pointer', display: 'block' },
+  imageMsg: { maxWidth: 'min(240px, 60vw)', maxHeight: 240, borderRadius: 8, cursor: 'pointer', display: 'block' },
   fileMsg: { display: 'flex', alignItems: 'center', gap: 10, color: 'inherit', textDecoration: 'none', padding: '2px 0' },
   fileIcon: { fontSize: 24, flexShrink: 0 },
   fileName: { fontSize: 13, fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
@@ -444,15 +448,15 @@ const styles = {
   uploadPercent: { fontSize: 13, fontWeight: 700, color: '#3A1D96', flexShrink: 0 },
   progressTrack: { height: 6, background: '#FFF0A0', borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: '100%', background: 'linear-gradient(90deg, #FEE500 0%, #FFD700 100%)', borderRadius: 3, transition: 'width 0.2s ease' },
-  videoMsg: { maxWidth: 280, maxHeight: 200, borderRadius: 8, background: '#000', display: 'block' },
+  videoMsg: { maxWidth: 'min(280px, 65vw)', maxHeight: 220, borderRadius: 8, background: '#000', display: 'block' },
   mediaWrap: { display: 'flex', flexDirection: 'column', gap: 4 },
   mediaCaption: { fontSize: 11, color: '#666', padding: '2px 0' },
   audioWrap: { display: 'flex', alignItems: 'center', gap: 10, minWidth: 220 },
   audioMsg: { width: '100%', height: 32, marginTop: 4 },
   inputArea: { display: 'flex', alignItems: 'flex-end', gap: 6, padding: '10px 14px', background: '#fff', borderTop: '1px solid #eee' },
-  toolBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: '6px', flexShrink: 0, borderRadius: 8, transition: 'background 0.15s' },
+  toolBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: '8px', flexShrink: 0, borderRadius: 8, transition: 'background 0.15s', minWidth: 40, minHeight: 40 },
   toolBtnActive: { background: '#FFF9C4' },
-  input: { flex: 1, border: '1.5px solid #eee', borderRadius: 20, padding: '8px 14px', fontSize: 14, outline: 'none', resize: 'none', maxHeight: 120, lineHeight: 1.5, background: '#f8f8f8' },
-  sendBtn: { background: '#FEE500', border: 'none', borderRadius: '50%', width: 40, height: 40, cursor: 'pointer', fontSize: 16, color: '#3A1D96', fontWeight: 700, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' },
+  input: { flex: 1, border: '1.5px solid #eee', borderRadius: 20, padding: '10px 14px', fontSize: 15, outline: 'none', resize: 'none', maxHeight: 120, lineHeight: 1.5, background: '#f8f8f8', minWidth: 0 },
+  sendBtn: { background: '#FEE500', border: 'none', borderRadius: '50%', width: 44, height: 44, cursor: 'pointer', fontSize: 16, color: '#3A1D96', fontWeight: 700, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' },
   sendBtnDisabled: { background: '#eee', color: '#bbb', cursor: 'default' },
 };

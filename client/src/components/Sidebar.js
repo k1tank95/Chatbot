@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
-export default function Sidebar({ rooms, activeRoom, onRoomSelect, onCreateRoom, userStatuses, currentUser }) {
+export default function Sidebar({ rooms, activeRoom, onRoomSelect, onCreateRoom, userStatuses, currentUser, isMobile }) {
   const { logout } = useAuth();
   const [search, setSearch] = useState('');
 
@@ -13,7 +13,7 @@ export default function Sidebar({ rooms, activeRoom, onRoomSelect, onCreateRoom,
   });
 
   return (
-    <div style={styles.sidebar}>
+    <div style={{ ...styles.sidebar, width: isMobile ? '100%' : 320, borderRight: isMobile ? 'none' : '1px solid #eee' }}>
       <div style={styles.header}>
         <div style={styles.headerTop}>
           <div style={styles.myProfile}>
@@ -121,13 +121,13 @@ function formatTime(dateStr) {
 }
 
 const styles = {
-  sidebar: { width: 320, background: '#fff', display: 'flex', flexDirection: 'column', borderRight: '1px solid #eee', height: '100vh' },
+  sidebar: { background: '#fff', display: 'flex', flexDirection: 'column', height: '100dvh', flexShrink: 0 },
   header: { padding: '16px 16px 8px', borderBottom: '1px solid #eee' },
   headerTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   myProfile: { display: 'flex', alignItems: 'center', gap: 10 },
   myName: { fontWeight: 700, fontSize: 15 },
   headerActions: { display: 'flex', gap: 4 },
-  iconBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '4px 6px', borderRadius: 8, transition: 'background 0.2s' },
+  iconBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, padding: '8px 10px', borderRadius: 8, transition: 'background 0.2s', minWidth: 40, minHeight: 40 },
   search: { width: '100%', padding: '8px 12px', background: '#f5f5f5', border: 'none', borderRadius: 20, fontSize: 14, outline: 'none' },
   list: { flex: 1, overflowY: 'auto' },
   empty: { textAlign: 'center', padding: '40px 20px', color: '#aaa', fontSize: 14, whiteSpace: 'pre-line', lineHeight: 1.6 },

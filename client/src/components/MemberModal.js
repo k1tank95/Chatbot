@@ -94,8 +94,8 @@ export default function MemberModal({ room, currentUser, onClose, onUpdated }) {
 }
 
 const styles = {
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-  modal: { background: '#fff', borderRadius: 16, width: '100%', maxWidth: 360, maxHeight: '70vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 12 },
+  modal: { background: '#fff', borderRadius: 16, width: '100%', maxWidth: 380, maxHeight: 'min(70vh, 560px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #eee' },
   title: { fontSize: 16, fontWeight: 700 },
   closeBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#666' },
