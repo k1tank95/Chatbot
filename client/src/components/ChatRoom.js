@@ -15,6 +15,7 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
   const [typing, setTyping] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
   const [showMembers, setShowMembers] = useState(false);
   const [viewImage, setViewImage] = useState(null);
   const [showEmoticons, setShowEmoticons] = useState(false);
@@ -113,21 +114,49 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
     if (!file) return;
 
     setUploading(true);
+    setUploadProgress({ fileName: file.name, fileSize: file.size, loaded: 0, percent: 0, speed: 0, eta: 0 });
+
+    const startTime = Date.now();
+    let lastLoaded = 0;
+    let lastTime = startTime;
+
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await axios.post('/api/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await axios.post('/api/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        timeout: 30 * 60 * 1000,
+        onUploadProgress: (progressEvent) => {
+          const now = Date.now();
+          const dt = (now - lastTime) / 1000;
+          const dl = progressEvent.loaded - lastLoaded;
+          const speed = dt > 0.3 ? dl / dt : (progressEvent.loaded - 0) / ((now - startTime) / 1000 || 1);
+          if (dt > 0.3) { lastLoaded = progressEvent.loaded; lastTime = now; }
+          const percent = progressEvent.total ? (progressEvent.loaded / progressEvent.total) * 100 : 0;
+          const remaining = progressEvent.total ? (progressEvent.total - progressEvent.loaded) / Math.max(speed, 1) : 0;
+          setUploadProgress({
+            fileName: file.name,
+            fileSize: file.size,
+            loaded: progressEvent.loaded,
+            percent,
+            speed,
+            eta: remaining,
+          });
+        }
+      });
       const { url, name, size, type } = res.data;
-
       socket.emit('send_message', {
         roomId: room.id, type, fileUrl: url, fileName: name, fileSize: size,
-        content: type === 'image' ? '[이미지]' : `[파일: ${name}]`
+        content: type === 'image' ? '[이미지]' : type === 'video' ? '[동영상]' : type === 'audio' ? '[음성]' : `[파일: ${name}]`
       });
     } catch (err) {
-      const msg = err.response?.data?.error || '파일 업로드에 실패했습니다.';
+      const msg = err.response?.data?.error || (err.code === 'ECONNABORTED' ? '업로드 시간이 초과되었습니다.' : '파일 업로드에 실패했습니다.');
       alert(msg);
     } finally {
       setUploading(false);
+      setUploadProgress(null);
       e.target.value = '';
     }
   };
@@ -180,9 +209,10 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
         <div ref={messagesEndRef} />
       </div>
 
+      {uploadProgress && <UploadProgressBar progress={uploadProgress} />}
+
       <div style={styles.inputArea}>
-        <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload}
-          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.mp4,.mp3" />
+        <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
 
         <div style={{ position: 'relative' }}>
           <button
@@ -230,6 +260,35 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
   );
 }
 
+function UploadProgressBar({ progress }) {
+  const { fileName, fileSize, loaded, percent, speed, eta } = progress;
+  const speedText = formatFileSize(speed) + '/s';
+  const etaText = eta > 0 && eta < 86400 ? formatTime(eta) : '계산 중...';
+  return (
+    <div style={styles.uploadBar}>
+      <div style={styles.uploadHeader}>
+        <span style={styles.uploadIcon}>📤</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={styles.uploadFileName}>{fileName}</div>
+          <div style={styles.uploadMeta}>
+            {formatFileSize(loaded)} / {formatFileSize(fileSize)} · {speedText} · 남은시간 {etaText}
+          </div>
+        </div>
+        <span style={styles.uploadPercent}>{percent.toFixed(1)}%</span>
+      </div>
+      <div style={styles.progressTrack}>
+        <div style={{ ...styles.progressFill, width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function formatTime(seconds) {
+  if (seconds < 60) return `${Math.ceil(seconds)}초`;
+  if (seconds < 3600) return `${Math.ceil(seconds / 60)}분`;
+  return `${Math.floor(seconds / 3600)}시간 ${Math.ceil((seconds % 3600) / 60)}분`;
+}
+
 function MessageBubble({ message, isMine, showAvatar, onImageClick }) {
   const timeStr = format(new Date(message.created_at), 'a h:mm', { locale: ko });
   const isEmoticon = message.type === 'emoticon';
@@ -263,12 +322,28 @@ function MessageBubble({ message, isMine, showAvatar, onImageClick }) {
                   style={styles.imageMsg}
                   onClick={() => onImageClick(message.file_url)}
                 />
+              ) : message.type === 'video' ? (
+                <div style={styles.mediaWrap}>
+                  <video src={message.file_url} controls preload="metadata" style={styles.videoMsg} />
+                  <div style={styles.mediaCaption}>
+                    🎬 {message.file_name} · {formatFileSize(message.file_size)}
+                  </div>
+                </div>
+              ) : message.type === 'audio' ? (
+                <div style={styles.audioWrap}>
+                  <span style={styles.fileIcon}>🎵</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={styles.fileName}>{message.file_name}</div>
+                    <audio src={message.file_url} controls style={styles.audioMsg} />
+                    <div style={styles.fileSize}>{formatFileSize(message.file_size)}</div>
+                  </div>
+                </div>
               ) : message.type === 'file' ? (
                 <a href={message.file_url} download={message.file_name} style={styles.fileMsg}>
-                  <span style={styles.fileIcon}>📎</span>
+                  <span style={styles.fileIcon}>{getFileIcon(message.file_name)}</span>
                   <div>
                     <div style={styles.fileName}>{message.file_name}</div>
-                    <div style={styles.fileSize}>{formatFileSize(message.file_size)}</div>
+                    <div style={styles.fileSize}>{formatFileSize(message.file_size)} · 클릭하여 다운로드</div>
                   </div>
                 </a>
               ) : (
@@ -295,10 +370,25 @@ function groupMessagesByDate(messages) {
 }
 
 function formatFileSize(bytes) {
-  if (!bytes) return '';
+  if (!bytes && bytes !== 0) return '';
   if (bytes < 1024) return `${bytes}B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)}GB`;
+}
+
+function getFileIcon(fileName) {
+  if (!fileName) return '📎';
+  const ext = fileName.split('.').pop().toLowerCase();
+  if (['pdf'].includes(ext)) return '📕';
+  if (['doc', 'docx', 'hwp'].includes(ext)) return '📘';
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return '📗';
+  if (['ppt', 'pptx'].includes(ext)) return '📙';
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '🗜️';
+  if (['txt', 'md'].includes(ext)) return '📝';
+  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'html', 'css', 'json'].includes(ext)) return '📜';
+  if (['psd', 'ai', 'sketch', 'fig'].includes(ext)) return '🎨';
+  return '📎';
 }
 
 const styles = {
@@ -334,6 +424,19 @@ const styles = {
   fileName: { fontSize: 13, fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   fileSize: { fontSize: 11, color: '#888', marginTop: 2 },
   msgTime: { fontSize: 10, color: '#888', flexShrink: 0, paddingBottom: 6 },
+  uploadBar: { padding: '10px 16px', background: '#FFFDE7', borderTop: '1px solid #f5e8c0' },
+  uploadHeader: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 },
+  uploadIcon: { fontSize: 20 },
+  uploadFileName: { fontSize: 13, fontWeight: 600, color: '#3A1D96', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  uploadMeta: { fontSize: 11, color: '#888', marginTop: 2 },
+  uploadPercent: { fontSize: 13, fontWeight: 700, color: '#3A1D96', flexShrink: 0 },
+  progressTrack: { height: 6, background: '#FFF0A0', borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', background: 'linear-gradient(90deg, #FEE500 0%, #FFD700 100%)', borderRadius: 3, transition: 'width 0.2s ease' },
+  videoMsg: { maxWidth: 280, maxHeight: 200, borderRadius: 8, background: '#000', display: 'block' },
+  mediaWrap: { display: 'flex', flexDirection: 'column', gap: 4 },
+  mediaCaption: { fontSize: 11, color: '#666', padding: '2px 0' },
+  audioWrap: { display: 'flex', alignItems: 'center', gap: 10, minWidth: 220 },
+  audioMsg: { width: '100%', height: 32, marginTop: 4 },
   inputArea: { display: 'flex', alignItems: 'flex-end', gap: 6, padding: '10px 14px', background: '#fff', borderTop: '1px solid #eee' },
   toolBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: '6px', flexShrink: 0, borderRadius: 8, transition: 'background 0.15s' },
   toolBtnActive: { background: '#FFF9C4' },

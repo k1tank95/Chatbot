@@ -16,8 +16,21 @@ const io = new Server(server, {
 });
 
 app.use(cors());
-app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// /uploads — Range 요청 지원 (비디오 스트리밍/대용량 파일 부분 다운로드)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  acceptRanges: true,
+  setHeaders: (res) => {
+    res.setHeader('Accept-Ranges', 'bytes');
+  }
+}));
+
+// 서버 타임아웃: 대용량 업로드 도중 끊기지 않도록 30분
+server.timeout = 30 * 60 * 1000;
+server.keepAliveTimeout = 30 * 60 * 1000;
+server.headersTimeout = 30 * 60 * 1000;
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/rooms', require('./routes/rooms'));
