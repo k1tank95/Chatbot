@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
-
 export default function CreateRoomModal({ onClose, onCreated }) {
-  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [users, setUsers] = useState([]);
   const [selected, setSelected] = useState([]);
