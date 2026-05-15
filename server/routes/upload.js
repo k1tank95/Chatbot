@@ -26,17 +26,24 @@ const upload = multer({
   }
 });
 
-router.post('/', authenticateToken, upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: '파일이 없습니다.' });
+router.post('/', authenticateToken, (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE')
+        return res.status(413).json({ error: '파일 크기는 50MB 이하여야 합니다.' });
+      return res.status(400).json({ error: err.message || '파일 업로드 실패' });
+    }
+    if (!req.file) return res.status(400).json({ error: '파일이 없습니다.' });
 
-  const fileUrl = `/uploads/${req.file.filename}`;
-  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(req.file.originalname);
+    const fileUrl = `/uploads/${req.file.filename}`;
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(req.file.originalname);
 
-  res.json({
-    url: fileUrl,
-    name: req.file.originalname,
-    size: req.file.size,
-    type: isImage ? 'image' : 'file'
+    res.json({
+      url: fileUrl,
+      name: req.file.originalname,
+      size: req.file.size,
+      type: isImage ? 'image' : 'file'
+    });
   });
 });
 
