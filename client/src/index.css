@@ -66,3 +66,38 @@ button[title]:hover {
   transform: scale(1.15) rotate(-3deg);
   transition: transform 0.15s;
 }
+
+/* 스티커 자체 효과 */
+.emoticon-sticker {
+  animation: stickerPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes stickerPop {
+  0%   { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(8deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* 반짝임 애니메이션 */
+@keyframes sparkleTwinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.7); }
+  50%      { opacity: 1;   transform: scale(1.2); }
+}
+
+/* 하트 떠오름 */
+@keyframes heartFloat {
+  0%   { transform: translateY(0) scale(1);    opacity: 1; }
+  50%  { transform: translateY(-8px) scale(1.1); opacity: 0.9; }
+  100% { transform: translateY(0) scale(1);    opacity: 1; }
+}
+
+/* 스티커 흔들림 (지속 효과) */
+.emoticon-sticker svg {
+  animation: stickerWiggle 3s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes stickerWiggle {
+  0%, 100% { transform: rotate(-2deg); }
+  50%      { transform: rotate(2deg); }
+}
