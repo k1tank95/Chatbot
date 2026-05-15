@@ -98,17 +98,32 @@ cd ..
 - `axios` — HTTP 통신
 - `date-fns` — 날짜 포맷
 
-### 4단계: 환경 변수 설정 (선택)
+### 4단계: 환경 변수 설정 (**필수**)
 
-프로젝트 루트의 `.env` 파일을 확인/수정합니다:
+`.env` 파일은 보안상 Git에 포함되지 않습니다. **직접 생성해야 합니다.**
+
+```bash
+# 예시 파일을 복사해서 .env 생성
+cp .env.example .env
+```
+
+**Windows PowerShell:**
+```powershell
+Copy-Item .env.example .env
+```
+
+이후 `.env` 파일을 열어 내용을 확인/수정합니다:
 
 ```env
 NODE_ENV=production
 PORT=5000
 JWT_SECRET=원하는-비밀-키로-변경하세요
+MAX_FILE_SIZE=5368709120
 ```
 
-> **⚠️ 운영 환경에서는 반드시 `JWT_SECRET`을 변경하세요!**
+> **⚠️ 이 단계를 건너뛰면 `localhost:5000` 접속 시 `Cannot GET /` 오류가 발생합니다.**
+>
+> **⚠️ 운영 환경에서는 반드시 `JWT_SECRET`을 길고 복잡한 값으로 변경하세요!**
 
 ### 5단계: React 앱 빌드
 
