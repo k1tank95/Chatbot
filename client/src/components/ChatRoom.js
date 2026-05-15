@@ -7,6 +7,7 @@ import MemberModal from './MemberModal';
 import ImageViewer from './ImageViewer';
 import EmoticonPicker from './EmoticonPicker';
 import EmoticonSticker from './Emoticons';
+import GameCenter from './GameCenter';
 
 export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdated }) {
   const { socket } = useSocket();
@@ -19,6 +20,7 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
   const [showMembers, setShowMembers] = useState(false);
   const [viewImage, setViewImage] = useState(null);
   const [showEmoticons, setShowEmoticons] = useState(false);
+  const [showGames, setShowGames] = useState(false);
   const [roomInfo, setRoomInfo] = useState(room);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -90,6 +92,11 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
       type: 'emoticon',
       content: emoticonId,
     });
+  }, [socket, room.id]);
+
+  const handleShareScore = useCallback((text) => {
+    if (!socket) return;
+    socket.emit('send_message', { roomId: room.id, type: 'text', content: text });
   }, [socket, room.id]);
 
   const handleKeyDown = (e) => {
@@ -234,6 +241,10 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
           {uploading ? '⏳' : '📎'}
         </button>
 
+        <button style={styles.toolBtn} onClick={() => setShowGames(true)} title="게임센터">
+          🎮
+        </button>
+
         <textarea
           style={styles.input}
           value={input}
@@ -256,6 +267,7 @@ export default function ChatRoom({ room, currentUser, userStatuses, onRoomUpdate
         />
       )}
       {viewImage && <ImageViewer url={viewImage} onClose={() => setViewImage(null)} />}
+      {showGames && <GameCenter onClose={() => setShowGames(false)} onScoreShare={handleShareScore} />}
     </div>
   );
 }
