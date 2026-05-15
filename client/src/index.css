@@ -118,3 +118,13 @@ button[title]:hover {
   0%, 100% { transform: rotate(-2deg); }
   50%      { transform: rotate(2deg); }
 }
+
+/* 알림 토스트 */
+@keyframes toastIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes toastOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
