@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import AuthPage from './components/AuthPage';
 import MainLayout from './components/MainLayout';
+import InstallPrompt from './components/InstallPrompt';
 
 function AppContent() {
   const { user } = useAuth();
@@ -10,5 +11,10 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AuthProvider><AppContent /></AuthProvider>;
+  return (
+    <AuthProvider>
+      <AppContent />
+      <InstallPrompt />
+    </AuthProvider>
+  );
 }
