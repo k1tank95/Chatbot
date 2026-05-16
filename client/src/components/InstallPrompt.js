@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const DISMISS_KEY = 'hamtalk_install_dismissed';
+const DISMISS_KEY = 'hamstalk_install_dismissed';
 
 export default function InstallPrompt() {
   const [deferred, setDeferred] = useState(null);
